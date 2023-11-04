@@ -245,7 +245,7 @@ final class MessageSearchViewController: LoggingViewController {
 }
 
 final class RootViewController: LoggingViewController {
-    private(set) lazy var button: UIButton! = {
+    private(set) lazy var button: UIButton = {
         .init(
             primaryAction: UIAction.init(
                 title: "Open Search",
@@ -259,7 +259,7 @@ final class RootViewController: LoggingViewController {
                         NewsSearchViewController(),
                         MessageSearchViewController()
                     ],
-                    initialIndex: 3
+                    initialIndex: 0
                 )
                 self?.show(searchContainerViewController, sender: self)
             })
