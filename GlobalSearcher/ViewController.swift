@@ -2,10 +2,13 @@ import UIKit
 import SwiftUI
 import OSLog
 
+/**
+ https://developer.apple.com/documentation/uikit/view_controllers/creating_a_custom_container_view_controller
+ */
+
 final class SearchContainerViewController: UIViewController {
     private let interaction = Logger(subsystem: "SearchContainerViewController", category: "Interaction")
-
-    private let lifecycle: Logger!
+    private let lifecycle = Logger(subsystem: "SearchContainerViewController", category: "Lifecycle")
 
     private(set) var viewControllers: [UIViewController]
     private(set) var initialViewControllerIndex: Int
@@ -14,14 +17,24 @@ final class SearchContainerViewController: UIViewController {
     private var searchButton: UIBarButtonItem!
 
     init(viewControllers: [UIViewController], initialIndex: Int = 0) {
-        lifecycle = Logger(subsystem: "\(Self.self)", category: "Lifecycle")
         lifecycle.info("\(Self.self).\(#function)")
 
         self.viewControllers = viewControllers
         self.initialViewControllerIndex = initialIndex
         super.init(nibName: nil, bundle: nil)
 
-        let menuItems = viewControllers.compactMap { $0.title }
+        let menuItems = viewControllers
+            .compactMap { $0.title }
+            .enumerated()
+            .map { index, item in
+                UIAction(
+                    title: item,
+                    image: UIImage(systemName: "magnifyingglass"),
+                    state: index == initialIndex ? .on : .off
+                ) { [weak self] action in
+                    self?.didSelectItem(atIndex: index)
+                }
+            }
 
         // https://developer.apple.com/wwdc20/10052
         self.searchButton = .init(
@@ -34,19 +47,9 @@ final class SearchContainerViewController: UIViewController {
                 identifier: nil,
                 options: [.singleSelection],
                 preferredElementSize: UIMenu.ElementSize.large,
-                children: menuItems.enumerated().map { index, item in
-                    UIAction(
-                        title: item,
-                        image: UIImage(systemName: "magnifyingglass"),
-                        state: index == initialIndex ? .on : .off
-                    ) { [weak self] action in
-                        self?.didSelectItem(atIndex: index)
-                    }
-                }
-
+                children: menuItems
             )
         )
-
     }
 
     @available(*, unavailable)
@@ -82,27 +85,32 @@ final class SearchContainerViewController: UIViewController {
         self.title = childViewController.title
 
         currentViewController = childViewController
+
         addChild(childViewController)
+        childViewController.didMove(toParent: self)
         view.addSubview(childView)
 
-
-        childView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            view.topAnchor.constraint(equalTo: childView.topAnchor),
-            view.bottomAnchor.constraint(equalTo: childView.bottomAnchor),
-            view.leadingAnchor.constraint(equalTo: childView.leadingAnchor),
-            view.trailingAnchor.constraint(equalTo: childView.trailingAnchor)
-        ])
-
-        childViewController.didMove(toParent: self)
+        activateConstraints(of: view, on: childView)
     }
 
-    // This is done in transition(from:to:duration:options:)
-//    @MainActor func removeCurrentViewController() {
-//        currentViewController?.willMove(toParent: nil)
-//        currentViewController?.view.removeFromSuperview()
-//        currentViewController?.removeFromParent()
-//    }
+    func activateConstraints(of baseView: UIView, on childView: UIView) {
+        childView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            baseView.topAnchor.constraint(equalTo: childView.topAnchor),
+            baseView.bottomAnchor.constraint(equalTo: childView.bottomAnchor),
+            baseView.leadingAnchor.constraint(equalTo: childView.leadingAnchor),
+            baseView.trailingAnchor.constraint(equalTo: childView.trailingAnchor)
+        ])
+    }
+
+    func deactivateConstraints(of baseView: UIView, on childView: UIView) {
+        NSLayoutConstraint.deactivate([
+            baseView.topAnchor.constraint(equalTo: childView.topAnchor),
+            baseView.bottomAnchor.constraint(equalTo: childView.bottomAnchor),
+            baseView.leadingAnchor.constraint(equalTo: childView.leadingAnchor),
+            baseView.trailingAnchor.constraint(equalTo: childView.trailingAnchor)
+        ])
+    }
 
     @MainActor func replace(
         _ fromViewController: UIViewController,
@@ -111,29 +119,45 @@ final class SearchContainerViewController: UIViewController {
     ) {
         if fromViewController === toViewController { return }
 
-        self.setCurrentViewController(toViewController)
+        // forwards the new title to the custom container
+        self.title = toViewController.title
 
+        currentViewController = toViewController
+        addChild(toViewController)
+
+        // transition(from:to:duration:options:animations:completion:) will add the view of the toViewController to the view hierachy!
         transition(
             from: fromViewController,
             to: toViewController,
             duration: duration,
             options: .transitionCrossDissolve
         ) {
-            UIView.animate(
-                withDuration: duration,
-                delay: 0.1,
-                usingSpringWithDamping: 0.2,
-                initialSpringVelocity: 0.4
-            ) {
-                self.view.bringSubviewToFront(toViewController.view)
-            }
+            self.deactivateConstraints(of: self.view, on: fromViewController.view)
+
+            self.activateConstraints(of: self.view, on: toViewController.view)
+
+            self.view.bringSubviewToFront(toViewController.view)
+
         } completion: { finished in
-            // nothing?
-            // new visible view controller . didMove(toParent: self)
+            fromViewController.removeFromParent()
+
+            // notify the child view controller that the move was completed
+            toViewController.didMove(toParent: self)
         }
+    }
+
+    override func transition(from fromViewController: UIViewController, to toViewController: UIViewController, duration: TimeInterval, options: UIView.AnimationOptions = [], animations: (() -> Void)?, completion: ((Bool) -> Void)? = nil) {
+        super.transition(from: fromViewController, to: toViewController, duration: duration, options: options, animations: animations, completion: completion)
+        lifecycle.info("\(Self.self).\(#function)")
+    }
+
+    override func addChild(_ childController: UIViewController) {
+        super.addChild(childController)
+        lifecycle.info("\(Self.self).\(#function)")
     }
 }
 
+// MARK: - Child View Controllers -
 
 struct JobSearchView: View {
     var body: some View {
@@ -174,6 +198,20 @@ final class JobSearchViewController: UIHostingController<JobSearchView> {
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        lifecycle.info("\(Self.self).\(#function)")
+    }
+    override func willMove(toParent parent: UIViewController?) {
+        super.willMove(toParent: parent)
+        lifecycle.info("\(Self.self).\(#function); parent: \(parent)")
+    }
+
+    override func didMove(toParent parent: UIViewController?) {
+        super.didMove(toParent: parent)
+        lifecycle.info("\(Self.self).\(#function); parent: \(parent)")
+    }
+
+    override func removeFromParent() {
+        super.removeFromParent()
         lifecycle.info("\(Self.self).\(#function)")
     }
 
@@ -284,6 +322,31 @@ class LoggingViewController: UIViewController {
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        lifecycle.info("\(Self.self).\(#function)")
+    }
+
+    override func willMove(toParent parent: UIViewController?) {
+        super.willMove(toParent: parent)
+        lifecycle.info("\(Self.self).\(#function); parent: \(parent)")
+    }
+
+    override func didMove(toParent parent: UIViewController?) {
+        super.didMove(toParent: parent)
+        lifecycle.info("\(Self.self).\(#function); parent: \(parent)")
+    }
+
+    override func removeFromParent() {
+        super.removeFromParent()
+        lifecycle.info("\(Self.self).\(#function)")
+    }
+
+    override func beginAppearanceTransition(_ isAppearing: Bool, animated: Bool) {
+        super.beginAppearanceTransition(isAppearing, animated: animated)
+        lifecycle.info("\(Self.self).\(#function)")
+    }
+
+    override func endAppearanceTransition() {
+        super.endAppearanceTransition()
         lifecycle.info("\(Self.self).\(#function)")
     }
 
