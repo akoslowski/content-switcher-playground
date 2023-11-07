@@ -2,10 +2,48 @@ import UIKit
 import SwiftUI
 import OSLog
 
+func makeMenu(
+    viewControllers: [UIViewController],
+    onSelect selection: @escaping (Int) -> Void
+) -> UIMenu {
+    let menuItems = viewControllers
+        .compactMap { $0.title }
+        .enumerated()
+        .map { index, item in
+            UIAction(
+                title: item,
+                image: UIImage(systemName: "magnifyingglass"),
+                state: .off
+            ) { action in
+                selection(index)
+            }
+        }
+
+    // https://developer.apple.com/wwdc20/10052
+    return UIMenu(
+            title: "Search Domains",
+            subtitle: nil,
+            image: nil,
+            identifier: nil,
+            options: [], // .singleSelection
+            preferredElementSize: UIMenu.ElementSize.large,
+            children: menuItems
+        )
+}
+
+func makeSearchViewControllers() -> [UIViewController] {
+    [
+        JobSearchViewController(),
+        MemberSearchViewController(),
+        CompanySearchViewController(),
+        NewsSearchViewController(),
+        MessageSearchViewController()
+    ]
+}
+
 /**
  https://developer.apple.com/documentation/uikit/view_controllers/creating_a_custom_container_view_controller
  */
-
 final class SearchContainerViewController: UIViewController {
     private let interaction = Logger(subsystem: "SearchContainerViewController", category: "Interaction")
     private let lifecycle = Logger(subsystem: "SearchContainerViewController", category: "Lifecycle")
@@ -23,31 +61,15 @@ final class SearchContainerViewController: UIViewController {
         self.initialViewControllerIndex = initialIndex
         super.init(nibName: nil, bundle: nil)
 
-        let menuItems = viewControllers
-            .compactMap { $0.title }
-            .enumerated()
-            .map { index, item in
-                UIAction(
-                    title: item,
-                    image: UIImage(systemName: "magnifyingglass"),
-                    state: index == initialIndex ? .on : .off
-                ) { [weak self] action in
-                    self?.didSelectItem(atIndex: index)
-                }
-            }
-
         // https://developer.apple.com/wwdc20/10052
         self.searchButton = .init(
             systemItem: .search,
             primaryAction: nil,
-            menu: UIMenu(
-                title: "Search Domains",
-                subtitle: nil,
-                image: nil,
-                identifier: nil,
-                options: [.singleSelection],
-                preferredElementSize: UIMenu.ElementSize.large,
-                children: menuItems
+            menu: makeMenu(
+                viewControllers: viewControllers,
+                onSelect: { [weak self] index in
+                    self?.didSelectItem(atIndex: index)
+                }
             )
         )
     }
@@ -55,6 +77,10 @@ final class SearchContainerViewController: UIViewController {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    deinit {
+        lifecycle.info("\(Self.self).\(#function)")
     }
 
     override func viewDidLoad() {
@@ -245,25 +271,31 @@ final class MessageSearchViewController: LoggingViewController {
 }
 
 final class RootViewController: LoggingViewController {
-    private(set) lazy var button: UIButton = {
+
+    private(set) lazy var button: UIButton =
         .init(
-            primaryAction: UIAction.init(
+            primaryAction: UIAction(
                 title: "Open Search",
                 image: UIImage(systemName: "magnifyingglass")
             ) { [weak self] action in
+                /**
+                 - SearchContext stores information in e.g. UserDefaults.
+
+                 ```
+                 let searchContext = SearchContext()
+
+                 JobSearchViewController(context: searchContext)
+                 ```
+                 */
+                guard let self else { return }
+
                 let searchContainerViewController = SearchContainerViewController(
-                    viewControllers: [
-                        JobSearchViewController(),
-                        MemberSearchViewController(),
-                        CompanySearchViewController(),
-                        NewsSearchViewController(),
-                        MessageSearchViewController()
-                    ],
+                    viewControllers: makeSearchViewControllers(),
                     initialIndex: 0
                 )
-                self?.show(searchContainerViewController, sender: self)
-            })
-    }()
+                self.show(searchContainerViewController, sender: self)
+            }
+        )
 
     init() {
         super.init(title: "Root")
@@ -275,6 +307,22 @@ final class RootViewController: LoggingViewController {
 
         view.addSubview(button)
 
+        navigationItem.rightBarButtonItem = .init(
+            systemItem: .search,
+            primaryAction: nil,
+            menu: makeMenu(
+                viewControllers: makeSearchViewControllers(),
+                onSelect: { [weak self] index in
+                    guard let self else { return }
+                    let searchContainerViewController = SearchContainerViewController(
+                        viewControllers: makeSearchViewControllers(),
+                        initialIndex: index
+                    )
+                    self.show(searchContainerViewController, sender: nil)
+                }
+            )
+        )
+
         button.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             view.topAnchor.constraint(equalTo: button.topAnchor),
@@ -285,7 +333,7 @@ final class RootViewController: LoggingViewController {
     }
 }
 
-class LoggingViewController: UIViewController {
+open class LoggingViewController: UIViewController {
     private let lifecycle: Logger!
     let backgroundColor: UIColor
 
@@ -298,7 +346,7 @@ class LoggingViewController: UIViewController {
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
@@ -309,43 +357,43 @@ class LoggingViewController: UIViewController {
 
          @__swiftmacro_50GlobalSearcher_PreviewReplacement_ViewController_133_799BAA2E55AA9E211BD324D3BED9BBB6Ll0C0fMf_.swift
      */
-    override func viewDidLoad() {
+    open override func viewDidLoad() {
         super.viewDidLoad()
         lifecycle.info("\(Self.self).\(#function)")
     }
 
-    override func viewWillAppear(_ animated: Bool) {
+    open override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         lifecycle.info("\(Self.self).\(#function)")
         view.backgroundColor = backgroundColor
     }
 
-    override func viewDidDisappear(_ animated: Bool) {
+    open override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         lifecycle.info("\(Self.self).\(#function)")
     }
 
-    override func willMove(toParent parent: UIViewController?) {
+    open override func willMove(toParent parent: UIViewController?) {
         super.willMove(toParent: parent)
         lifecycle.info("\(Self.self).\(#function); parent: \(parent)")
     }
 
-    override func didMove(toParent parent: UIViewController?) {
+    open override func didMove(toParent parent: UIViewController?) {
         super.didMove(toParent: parent)
         lifecycle.info("\(Self.self).\(#function); parent: \(parent)")
     }
 
-    override func removeFromParent() {
+    open override func removeFromParent() {
         super.removeFromParent()
         lifecycle.info("\(Self.self).\(#function)")
     }
 
-    override func beginAppearanceTransition(_ isAppearing: Bool, animated: Bool) {
+    open override func beginAppearanceTransition(_ isAppearing: Bool, animated: Bool) {
         super.beginAppearanceTransition(isAppearing, animated: animated)
         lifecycle.info("\(Self.self).\(#function)")
     }
 
-    override func endAppearanceTransition() {
+    open override func endAppearanceTransition() {
         super.endAppearanceTransition()
         lifecycle.info("\(Self.self).\(#function)")
     }
