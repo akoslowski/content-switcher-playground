@@ -91,6 +91,18 @@ final class SearchContainerViewController: UIViewController {
         setCurrentViewController(initialViewController)
 
         navigationItem.rightBarButtonItem = searchButton
+
+        view.backgroundColor = .searchBackground
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setAppearance(searchNavBarAppearance)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setAppearance(baseNavBarAppearance)
     }
 
     func didSelectItem(atIndex index: Int) {
@@ -181,4 +193,8 @@ final class SearchContainerViewController: UIViewController {
         super.addChild(childController)
         lifecycle.info("\(Self.self).\(#function)")
     }
+}
+
+extension UIColor {
+    static let searchBackground = UIColor(red: 0.78, green: 0.95, blue: 0.43, alpha: 1)
 }

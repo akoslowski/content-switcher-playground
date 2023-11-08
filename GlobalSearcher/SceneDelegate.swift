@@ -24,5 +24,24 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneDidEnterBackground(_ scene: UIScene) {}
 }
 
+let baseNavBarAppearance: UINavigationBarAppearance = {
+    let appearance = UINavigationBarAppearance()
+    appearance.configureWithOpaqueBackground()
+    return appearance
+}()
 
+let searchNavBarAppearance: UINavigationBarAppearance = {
+    let appearance = UINavigationBarAppearance()
+    appearance.backgroundImage = UIImage(named: "search-container-nav-bar")
+    appearance.backgroundImageContentMode = .scaleToFill
+    appearance.shadowColor = .clear
+    return appearance
+}()
 
+extension UINavigationController {
+    func setAppearance(_ appearance: UINavigationBarAppearance) {
+        navigationBar.standardAppearance = appearance
+        navigationBar.scrollEdgeAppearance = appearance
+        navigationBar.compactAppearance = appearance
+    }
+}
