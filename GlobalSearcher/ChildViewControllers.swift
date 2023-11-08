@@ -4,12 +4,49 @@ import OSLog
 
 struct JobSearchView: View {
     var body: some View {
-        VStack {
-            List(0..<100) {
-                Text("\($0)")
+        ScrollView {
+            VStack(spacing: 24) {
+                VStack(spacing: 16) {
+                    TextField("Look for a job", text: .constant(""))
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 12)
+                        .background(.white)
+                        .clipShape(Capsule())
+
+                    TextField("Look for a city", text: .constant(""))
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 12)
+                        .background(.white)
+                        .clipShape(Capsule())
+                }
+                .padding(.top)
+                .padding(.horizontal)
+                .background(
+                    Image("jobs-search-background")
+                )
+
+                VStack {
+                    ForEach(0..<100, id: \.self) { item in
+                        NavigationLink {
+                            Text("Job detail")
+                        } label: {
+                            Text("\(item)")
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 36)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.teal)
+                                )
+                                .tint(Color.white)
+                        }
+
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
+                }
+                .background(.white)
             }
         }
-        .navigationTitle("Search Jobs (SwiftUI)")
     }
 }
 
@@ -31,7 +68,7 @@ final class JobSearchViewController: UIHostingController<JobSearchView> {
     override func viewDidLoad() {
         super.viewDidLoad()
         lifecycle.info("\(Self.self).\(#function)")
-        view.backgroundColor = .white
+        view.backgroundColor = .searchBackground
     }
 
     override func viewWillAppear(_ animated: Bool) {
