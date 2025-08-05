@@ -1,4 +1,4 @@
-# README
+# ContentSwitcherPlayground
 
 This projects shows a way to use a custom container view controller to in-place switch view controllers.
 
