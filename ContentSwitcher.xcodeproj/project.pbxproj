@@ -10,18 +10,8 @@
 		0FB7A8AF2AF55DFA008EAFCA /* ContentSwitcher.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ContentSwitcher.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		0F7731892E3A85D700D55BCB /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Resources/Info.plist,
-			);
-			target = 0FB7A8AE2AF55DFA008EAFCA /* ContentSwitcher */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		0F7731802E3A85D700D55BCB /* ContentSwitcher */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (0F7731892E3A85D700D55BCB /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = ContentSwitcher; sourceTree = "<group>"; };
+		0F7731802E3A85D700D55BCB /* ContentSwitcher */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ContentSwitcher; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
