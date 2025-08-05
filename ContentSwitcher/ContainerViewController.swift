@@ -1,8 +1,7 @@
 import UIKit
-import SwiftUI
 import OSLog
 
-func makeMenu(
+@MainActor func makeMenu(
     viewControllers: [UIViewController],
     onSelect selection: @escaping (Int) -> Void
 ) -> UIMenu {
@@ -12,8 +11,6 @@ func makeMenu(
         .map { index, item in
             UIAction(
                 title: item,
-                image: UIImage(systemName: "magnifyingglass"),
-                state: .off
             ) { action in
                 selection(index)
             }
@@ -21,49 +18,39 @@ func makeMenu(
 
     // https://developer.apple.com/wwdc20/10052
     return UIMenu(
-            title: "Search Domains",
+            title: "Colors",
             subtitle: nil,
             image: nil,
             identifier: nil,
-            options: [], // .singleSelection
+            options: [],
             preferredElementSize: UIMenu.ElementSize.large,
             children: menuItems
         )
 }
 
-func makeSearchViewControllers() -> [UIViewController] {
-    [
-        JobSearchViewController(),
-        MemberSearchViewController(),
-        CompanySearchViewController(),
-        NewsSearchViewController(),
-        MessageSearchViewController()
-    ]
-}
-
 /**
  https://developer.apple.com/documentation/uikit/view_controllers/creating_a_custom_container_view_controller
  */
-final class SearchContainerViewController: UIViewController {
-    private let interaction = Logger(subsystem: "SearchContainerViewController", category: "Interaction")
-    private let lifecycle = Logger(subsystem: "SearchContainerViewController", category: "Lifecycle")
+final class ContainerViewController: UIViewController {
+    private let logger = Logger()
 
     private(set) var viewControllers: [UIViewController]
     private(set) var initialViewControllerIndex: Int
     private weak var currentViewController: UIViewController?
 
-    private var searchButton: UIBarButtonItem!
+    private var menuButton: UIBarButtonItem!
 
     init(viewControllers: [UIViewController], initialIndex: Int = 0) {
-        lifecycle.info("\(Self.self).\(#function)")
+        logger.info("\(Self.self).\(#function)")
 
         self.viewControllers = viewControllers
         self.initialViewControllerIndex = initialIndex
         super.init(nibName: nil, bundle: nil)
 
         // https://developer.apple.com/wwdc20/10052
-        self.searchButton = .init(
-            systemItem: .search,
+        self.menuButton = .init(
+            title: nil,
+            image: UIImage(systemName: "ellipsis"),
             primaryAction: nil,
             menu: makeMenu(
                 viewControllers: viewControllers,
@@ -72,6 +59,8 @@ final class SearchContainerViewController: UIViewController {
                 }
             )
         )
+
+        updateSelectedMenuItem(at: initialIndex)
     }
 
     @available(*, unavailable)
@@ -80,22 +69,36 @@ final class SearchContainerViewController: UIViewController {
     }
 
     deinit {
-        lifecycle.info("\(Self.self).\(#function)")
+        logger.info("\(Self.self).\(#function)")
     }
 
     override func viewDidLoad() {
-        lifecycle.info("\(Self.self).\(#function)")
+        logger.info("\(Self.self).\(#function)")
         super.viewDidLoad()
 
         let initialViewController = viewControllers[initialViewControllerIndex]
         setCurrentViewController(initialViewController)
 
-        navigationItem.rightBarButtonItem = searchButton
+        navigationItem.rightBarButtonItem = menuButton
+    }
+
+    func updateSelectedMenuItem(at index: Int) {
+        menuButton.menu?.children.enumerated().forEach { item in
+            if let action = item.element as? UIAction {
+                action.state = item.offset == index ? .on : .off
+            }
+        }
     }
 
     func didSelectItem(atIndex index: Int) {
         let title = viewControllers[index].title ?? "no-title-found"
-        interaction.info("\(Self.self).\(#function): \(index), \(title)")
+        logger.info("\(Self.self).\(#function): \(index), \(title)")
+        initialViewControllerIndex = index
+        updateSelectedMenuItem(at: index)
+
+        if let menuItems = menuButton.menu?.children, let item = menuItems[index] as? UIAction {
+            item.state = .on
+        }
 
         guard let currentViewController else { preconditionFailure("currentViewController must be set") }
 
@@ -174,11 +177,11 @@ final class SearchContainerViewController: UIViewController {
 
     override func transition(from fromViewController: UIViewController, to toViewController: UIViewController, duration: TimeInterval, options: UIView.AnimationOptions = [], animations: (() -> Void)?, completion: ((Bool) -> Void)? = nil) {
         super.transition(from: fromViewController, to: toViewController, duration: duration, options: options, animations: animations, completion: completion)
-        lifecycle.info("\(Self.self).\(#function)")
+        logger.info("\(Self.self).\(#function)")
     }
 
     override func addChild(_ childController: UIViewController) {
         super.addChild(childController)
-        lifecycle.info("\(Self.self).\(#function)")
+        logger.info("\(Self.self).\(#function)")
     }
 }
