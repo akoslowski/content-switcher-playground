@@ -1,11 +1,12 @@
-import UIKit
 import OSLog
+import UIKit
 
 @MainActor func makeMenu(
     viewControllers: [UIViewController],
     onSelect selection: @escaping (Int) -> Void
 ) -> UIMenu {
-    let menuItems = viewControllers
+    let menuItems =
+        viewControllers
         .compactMap { $0.title }
         .enumerated()
         .map { index, item in
@@ -15,22 +16,17 @@ import OSLog
                 selection(index)
             }
         }
-
-    // https://developer.apple.com/wwdc20/10052
     return UIMenu(
-            title: "Colors",
-            subtitle: nil,
-            image: nil,
-            identifier: nil,
-            options: [],
-            preferredElementSize: UIMenu.ElementSize.large,
-            children: menuItems
-        )
+        title: "Colors",
+        subtitle: nil,
+        image: nil,
+        identifier: nil,
+        options: [],
+        preferredElementSize: UIMenu.ElementSize.large,
+        children: menuItems
+    )
 }
 
-/**
- https://developer.apple.com/documentation/uikit/view_controllers/creating_a_custom_container_view_controller
- */
 final class ContainerViewController: UIViewController {
     private let logger = Logger()
 
@@ -128,7 +124,7 @@ final class ContainerViewController: UIViewController {
             baseView.topAnchor.constraint(equalTo: childView.topAnchor),
             baseView.bottomAnchor.constraint(equalTo: childView.bottomAnchor),
             baseView.leadingAnchor.constraint(equalTo: childView.leadingAnchor),
-            baseView.trailingAnchor.constraint(equalTo: childView.trailingAnchor)
+            baseView.trailingAnchor.constraint(equalTo: childView.trailingAnchor),
         ])
     }
 
@@ -137,7 +133,7 @@ final class ContainerViewController: UIViewController {
             baseView.topAnchor.constraint(equalTo: childView.topAnchor),
             baseView.bottomAnchor.constraint(equalTo: childView.bottomAnchor),
             baseView.leadingAnchor.constraint(equalTo: childView.leadingAnchor),
-            baseView.trailingAnchor.constraint(equalTo: childView.trailingAnchor)
+            baseView.trailingAnchor.constraint(equalTo: childView.trailingAnchor),
         ])
     }
 
@@ -154,7 +150,8 @@ final class ContainerViewController: UIViewController {
         currentViewController = toViewController
         addChild(toViewController)
 
-        // transition(from:to:duration:options:animations:completion:) will add the view of the toViewController to the view hierachy!
+        // transition(from:to:duration:options:animations:completion:) will
+        // add the view of the toViewController to the view hierachy!
         transition(
             from: fromViewController,
             to: toViewController,
@@ -175,8 +172,22 @@ final class ContainerViewController: UIViewController {
         }
     }
 
-    override func transition(from fromViewController: UIViewController, to toViewController: UIViewController, duration: TimeInterval, options: UIView.AnimationOptions = [], animations: (() -> Void)?, completion: ((Bool) -> Void)? = nil) {
-        super.transition(from: fromViewController, to: toViewController, duration: duration, options: options, animations: animations, completion: completion)
+    override func transition(
+        from fromViewController: UIViewController,
+        to toViewController: UIViewController,
+        duration: TimeInterval,
+        options: UIView.AnimationOptions = [],
+        animations: (() -> Void)?,
+        completion: ((Bool) -> Void)? = nil
+    ) {
+        super.transition(
+            from: fromViewController,
+            to: toViewController,
+            duration: duration,
+            options: options,
+            animations: animations,
+            completion: completion
+        )
         logger.info("\(Self.self).\(#function)")
     }
 

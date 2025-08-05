@@ -1,5 +1,5 @@
-import UIKit
 import OSLog
+import UIKit
 
 open class ColorViewController: UIViewController {
     private let logger: Logger
